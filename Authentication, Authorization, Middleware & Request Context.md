@@ -1,0 +1,1870 @@
+# 07. Authentication, Authorization, Middleware & Request Context 🔐
+
+> **Authentication answers "Who are you?" Authentication establishes identity. Authorization answers "What are you allowed to do?" Middleware is the pipeline that enforces these rules before the request reaches the application's business logic.**
+
+---
+
+# 1. Authentication vs Authorization
+
+These two concepts are often confused.
+
+## Authentication
+
+Authentication answers:
+
+> **Who are you?**
+
+Example:
+
+```text
+User
+ ↓
+Email + Password
+ ↓
+Server verifies credentials
+ ↓
+User identified
+```
+
+The system now knows:
+
+```text
+userId = 123
+```
+
+---
+
+## Authorization
+
+Authorization answers:
+
+> **What are you allowed to do?**
+
+For example:
+
+```text
+User 123
+   ↓
+Authenticated
+   ↓
+Role = USER
+   ↓
+Can read profile
+   ↓
+Cannot delete another user's account
+```
+
+So:
+
+```text
+Authentication
+      ↓
+Who are you?
+
+Authorization
+      ↓
+What can you do?
+```
+
+---
+
+# 2. The Four Authentication Models
+
+The video focuses on four common approaches:
+
+```text
+Authentication
+│
+├── Stateful Authentication
+│   └── Sessions
+│
+├── Stateless Authentication
+│   └── JWT
+│
+├── API Keys
+│
+└── OAuth 2.0 + OIDC
+```
+
+There isn't one universally correct authentication mechanism.
+
+The correct choice depends on:
+
+* Who is communicating
+* Whether the client is a browser/mobile app/service
+* Revocation requirements
+* Scalability requirements
+* Security requirements
+* Trust boundaries
+
+---
+
+# 3. Stateful Authentication — Sessions
+
+Sessions are the classic server-side authentication mechanism.
+
+The basic flow:
+
+```text
+Client
+   │
+   │ Username + Password
+   ▼
+Server
+   │
+   │ Verify credentials
+   ▼
+Create Session
+   │
+   │ Session ID
+   ▼
+Client
+```
+
+The server stores the session.
+
+For example:
+
+```text
+Session Store
+
+session_abc123
+      ↓
+userId = 123
+role = USER
+expires = ...
+```
+
+The client receives:
+
+```text
+session_abc123
+```
+
+usually through a cookie.
+
+---
+
+# 4. Session Authentication Flow
+
+### Login
+
+```text
+POST /login
+```
+
+```json
+{
+  "email": "user@example.com",
+  "password": "..."
+}
+```
+
+Server:
+
+```text
+Verify credentials
+      ↓
+Create session
+      ↓
+Store session → userId
+      ↓
+Send session ID
+```
+
+Browser:
+
+```text
+Cookie:
+session_id=abc123
+```
+
+---
+
+### Subsequent Request
+
+```text
+GET /profile
+Cookie: session_id=abc123
+```
+
+Server:
+
+```text
+session_id
+    ↓
+Session Store
+    ↓
+userId = 123
+    ↓
+Authenticated
+```
+
+---
+
+# 5. Why Sessions Are Stateful
+
+The important part is:
+
+> **The server remembers the session.**
+
+The client only possesses an identifier.
+
+```text
+Client
+   │
+   │ session_id=abc123
+   ▼
+Server
+   │
+   ▼
+Session Store
+   │
+   └── abc123 → user 123
+```
+
+The session ID itself doesn't need to contain the user's information.
+
+It can simply be a cryptographically random opaque string.
+
+---
+
+# 6. Advantage of Sessions — Revocation
+
+One of the biggest advantages of sessions is control.
+
+Suppose a user logs out.
+
+The server can simply delete:
+
+```text
+session_abc123
+```
+
+Now:
+
+```text
+session_abc123
+      ↓
+Not found
+      ↓
+401 Unauthorized
+```
+
+The session can be invalidated immediately.
+
+This gives the server strong control over authentication state.
+
+---
+
+# 7. The Scaling Problem With Sessions
+
+Now imagine:
+
+```text
+              Load Balancer
+             /      |      \
+            ↓       ↓       ↓
+         Server A Server B Server C
+```
+
+A request could reach any server.
+
+If Server A created:
+
+```text
+session_abc123
+```
+
+but the next request reaches Server B:
+
+```text
+Client
+   ↓
+Server B
+   ↓
+Where is session_abc123?
+```
+
+Server B needs access to the same session state.
+
+A common solution is a shared session store:
+
+```text
+          Load Balancer
+          /     |     \
+         ↓      ↓      ↓
+       A       B       C
+        \       |      /
+         \      |     /
+          ↓     ↓    ↓
+          Shared
+       Session Store
+```
+
+Redis is commonly used for this type of shared state.
+
+Another approach is sticky sessions, where the load balancer tries to keep a client connected to the same server.
+
+---
+
+# 8. Stateless Authentication — JWT
+
+JWT stands for:
+
+> **JSON Web Token**
+
+Instead of storing authentication state entirely on the server, information is encoded inside the token.
+
+The basic flow:
+
+```text
+Login
+  ↓
+Verify Credentials
+  ↓
+Create JWT
+  ↓
+Send JWT to Client
+```
+
+Later:
+
+```text
+Client
+   ↓
+JWT
+   ↓
+Server
+   ↓
+Verify Signature
+   ↓
+Read Claims
+   ↓
+Authenticated
+```
+
+The server doesn't necessarily need to query a session store to identify the user.
+
+---
+
+# 9. JWT Structure
+
+A JWT consists of three parts:
+
+```text
+HEADER.PAYLOAD.SIGNATURE
+```
+
+Example conceptually:
+
+```text
+xxxxx.yyyyy.zzzzz
+```
+
+---
+
+## Part 1 — Header
+
+Contains information about the token.
+
+For example:
+
+```json
+{
+  "alg": "HS256",
+  "typ": "JWT"
+}
+```
+
+---
+
+## Part 2 — Payload
+
+Contains claims.
+
+Example:
+
+```json
+{
+  "sub": "123",
+  "role": "user",
+  "exp": 1780000000
+}
+```
+
+Possible claims include:
+
+* User ID
+* Role
+* Expiration
+* Issued-at time
+* Issuer
+* Audience
+
+---
+
+## Part 3 — Signature
+
+The signature allows the server to verify that the token hasn't been modified.
+
+Conceptually:
+
+```text
+Header
+   +
+Payload
+   +
+Secret / Private Key
+   ↓
+Signature
+```
+
+The server verifies:
+
+```text
+Received Token
+      ↓
+Verify Signature
+      ↓
+Valid?
+ ┌────┴────┐
+Yes        No
+ ↓          ↓
+Continue   Reject
+```
+
+---
+
+# 10. Important: JWT Is Not Encryption
+
+A very common interview mistake:
+
+> "JWT encrypts the user's data."
+
+Usually, **no**.
+
+A normal signed JWT is encoded and signed, not encrypted.
+
+The payload can generally be decoded by whoever possesses the token.
+
+Therefore:
+
+```text
+❌ Don't put passwords in JWTs
+❌ Don't put sensitive secrets in JWT payloads
+```
+
+The signature protects against tampering.
+
+It does not make the payload confidential.
+
+---
+
+# 11. Sending JWTs
+
+A common approach is the `Authorization` header:
+
+```http
+Authorization: Bearer <token>
+```
+
+The request:
+
+```text
+GET /profile
+
+Authorization: Bearer eyJ...
+```
+
+Server:
+
+```text
+Extract Token
+     ↓
+Verify Signature
+     ↓
+Validate Claims
+     ↓
+Identify User
+```
+
+---
+
+# 12. Why JWTs Scale Well
+
+Consider:
+
+```text
+             Load Balancer
+            /      |      \
+           ↓       ↓       ↓
+        Server A Server B Server C
+```
+
+If the JWT can be independently verified by every server:
+
+```text
+Server A → Verify JWT
+Server B → Verify JWT
+Server C → Verify JWT
+```
+
+there is no need for all servers to access a shared session store merely to identify the user.
+
+This makes horizontal scaling easier.
+
+```text
+JWT
+ ↓
+Self-contained authentication information
+ ↓
+Any server can verify it
+```
+
+---
+
+# 13. The Major JWT Problem — Revocation
+
+This is one of the most important JWT trade-offs.
+
+Suppose:
+
+```text
+JWT
+expires in 7 days
+```
+
+and the token is stolen.
+
+The server can verify:
+
+```text
+Signature ✓
+Expiration ✓
+```
+
+So, without an additional mechanism, the token remains valid until it expires.
+
+This is fundamentally different from a server-side session that can simply be deleted.
+
+```text
+Session
+ ↓
+Delete session
+ ↓
+Immediately invalid ❌
+
+JWT
+ ↓
+Valid signature + not expired
+ ↓
+Still valid
+```
+
+---
+
+# 14. JWT Trade-off
+
+```text
+Sessions
+   │
+   ├── Easy revocation
+   ├── Server-side state
+   └── Shared session storage at scale
+
+JWT
+   │
+   ├── Stateless verification
+   ├── Easy horizontal scaling
+   └── Harder immediate revocation
+```
+
+This is the fundamental trade-off.
+
+---
+
+# 15. Hybrid Authentication
+
+A practical solution is to combine JWT with server-side revocation.
+
+```text
+JWT
+ ↓
+Contains identity
+ ↓
+Verify signature
+ ↓
+Check blacklist
+ ↓
+Allow / Reject
+```
+
+For example:
+
+```text
+Redis
+
+blacklist:
+ ├── token_abc
+ ├── token_xyz
+ └── token_123
+```
+
+If the JWT is valid but appears in the blacklist:
+
+```text
+JWT valid
+   +
+Blacklisted
+   ↓
+Reject
+```
+
+This gives you:
+
+```text
+JWT scalability
+       +
+Selective revocation
+```
+
+at the cost of an additional lookup and more complexity.
+
+---
+
+# 16. Why Not Just Use Sessions?
+
+A reasonable question is:
+
+> "If we're checking Redis anyway, why not just use sessions?"
+
+The distinction is that a JWT can carry useful identity claims itself.
+
+The server doesn't necessarily need to retrieve the full user/session record on every request.
+
+The additional lookup can be limited to checking whether the token has been revoked.
+
+So the trade-off becomes:
+
+```text
+Sessions
+→ More server-side state
+
+JWT + blacklist
+→ Mostly stateless + small revocation state
+```
+
+---
+
+# 17. API Keys
+
+API keys are primarily useful for **machine-to-machine communication**.
+
+For example:
+
+```text
+Application A
+      ↓
+API Key
+      ↓
+Service B
+```
+
+A server might issue:
+
+```text
+sk_live_abc123...
+```
+
+The client sends:
+
+```http
+Authorization: Bearer <api-key>
+```
+
+or another agreed-upon header format.
+
+The server associates the key with:
+
+* Application
+* Account
+* Permissions
+* Rate limits
+
+---
+
+# 18. API Keys vs User Authentication
+
+API keys are generally better suited to:
+
+```text
+Machine
+   ↔
+Machine
+```
+
+rather than:
+
+```text
+Human User
+   ↔
+Application
+```
+
+Example:
+
+```text
+Your Backend
+     ↓
+Third-party API
+     ↓
+API Key
+```
+
+The key identifies the calling application and grants access.
+
+---
+
+# 19. OAuth 2.0
+
+OAuth solves a different problem.
+
+Imagine:
+
+```text
+Application A
+      ↓
+Needs access to
+      ↓
+Service B
+```
+
+You don't want to give Application A your Service B password.
+
+Instead:
+
+```text
+User
+ ↓
+Service B
+ ↓
+Grant permission
+ ↓
+Access Token
+ ↓
+Application A
+```
+
+The application receives a limited credential rather than your password.
+
+---
+
+# 20. OAuth Is Authorization
+
+This distinction is extremely important.
+
+### OAuth 2.0
+
+Primarily answers:
+
+> **What is this application allowed to access?**
+
+### OpenID Connect
+
+Adds an identity layer:
+
+> **Who is the user?**
+
+Therefore:
+
+```text
+OAuth 2.0
+   ↓
+Authorization
+
+OIDC
+   ↓
+Authentication / Identity
+   +
+OAuth 2.0
+```
+
+---
+
+# 21. OpenID Connect — OIDC
+
+OIDC is an identity layer built on top of OAuth 2.0.
+
+It introduces an **ID Token**.
+
+The ID token can contain identity claims such as:
+
+```json
+{
+  "sub": "123",
+  "name": "Yusuf",
+  "email": "user@example.com"
+}
+```
+
+This allows an application to establish the user's identity.
+
+---
+
+# 22. OAuth Flows
+
+Different situations use different OAuth flows.
+
+### Authorization Code
+
+Common for web applications.
+
+```text
+User
+ ↓
+Authorization Server
+ ↓
+Authorization Code
+ ↓
+Application
+ ↓
+Access Token
+```
+
+---
+
+### Device Authorization
+
+Useful for devices where entering credentials directly isn't convenient.
+
+Examples:
+
+* TVs
+* Consoles
+* CLI tools
+
+---
+
+### Client Credentials
+
+Used for machine-to-machine communication.
+
+```text
+Service A
+   ↓
+Client Credentials
+   ↓
+Service B
+```
+
+No human user is involved.
+
+---
+
+# 23. Cookies vs Tokens
+
+These are often incorrectly treated as competing concepts.
+
+They aren't.
+
+### Cookie
+
+A **storage/transport mechanism** used by the browser.
+
+### Token
+
+A **credential format**.
+
+Therefore:
+
+```text
+Cookie
+   ↓
+can contain
+   ↓
+Session ID
+```
+
+or:
+
+```text
+Cookie
+   ↓
+can contain
+   ↓
+JWT
+```
+
+These concepts are orthogonal.
+
+---
+
+# 24. Cookie Security Flags
+
+When authentication information is stored in cookies, important attributes include:
+
+### HttpOnly
+
+Prevents normal JavaScript from reading the cookie.
+
+Useful for reducing exposure to token theft through XSS.
+
+### Secure
+
+Cookie should only be sent over HTTPS.
+
+### SameSite
+
+Controls cross-site cookie behavior and can help mitigate certain CSRF scenarios.
+
+Conceptually:
+
+```text
+Set-Cookie:
+session=abc;
+HttpOnly;
+Secure;
+SameSite=Lax
+```
+
+---
+
+# 25. Middleware
+
+Now we move from **how identity is established** to **where authentication is enforced**.
+
+Middleware sits inside the request pipeline.
+
+```text
+Request
+   ↓
+Middleware 1
+   ↓
+Middleware 2
+   ↓
+Middleware 3
+   ↓
+Controller
+   ↓
+Response
+```
+
+A middleware generally receives:
+
+```text
+request
+response
+next
+```
+
+---
+
+# 26. What Does `next()` Do?
+
+Suppose:
+
+```javascript
+function middleware(req, res, next) {
+    // do something
+    next();
+}
+```
+
+Calling:
+
+```text
+next()
+```
+
+means:
+
+> Continue to the next middleware/handler.
+
+So:
+
+```text
+Request
+ ↓
+Middleware 1
+ ↓ next()
+Middleware 2
+ ↓ next()
+Controller
+```
+
+---
+
+# 27. Short-Circuiting Middleware
+
+Middleware doesn't always need to call `next()`.
+
+For example:
+
+```text
+Request
+   ↓
+Authentication Middleware
+   ↓
+Invalid Token
+   ↓
+401 Unauthorized
+```
+
+The request stops.
+
+```text
+Request
+   ↓
+Auth Middleware
+   ↓
+❌ Reject
+```
+
+The controller is never executed.
+
+This is one of the most important properties of middleware.
+
+---
+
+# 28. Middleware as a Pipeline
+
+Think of middleware as a series of checkpoints.
+
+```text
+Request
+   ↓
+┌───────────────┐
+│ Logging       │
+└───────┬───────┘
+        ↓
+┌───────────────┐
+│ CORS          │
+└───────┬───────┘
+        ↓
+┌───────────────┐
+│ Rate Limit    │
+└───────┬───────┘
+        ↓
+┌───────────────┐
+│ Authentication│
+└───────┬───────┘
+        ↓
+┌───────────────┐
+│ Controller    │
+└───────────────┘
+```
+
+Each middleware performs one responsibility.
+
+---
+
+# 29. Common Middleware Responsibilities
+
+### CORS
+
+Determines whether a request origin is permitted.
+
+```text
+Origin
+ ↓
+CORS Middleware
+ ↓
+Allowed?
+```
+
+---
+
+### Rate Limiting
+
+Controls how many requests a client can make.
+
+```text
+Client
+ ↓
+100 requests/minute
+ ↓
+Rate Limiter
+ ↓
+Allow / Reject
+```
+
+This helps prevent:
+
+* Abuse
+* Brute force attacks
+* Resource exhaustion
+
+---
+
+### Authentication
+
+Validates:
+
+* Sessions
+* JWTs
+* API keys
+
+```text
+Request
+ ↓
+Auth Middleware
+ ↓
+Authenticated?
+```
+
+---
+
+### Compression
+
+Compresses response data.
+
+```text
+Response
+ ↓
+gzip / Brotli
+ ↓
+Network
+```
+
+---
+
+### Data Parsing
+
+Converts incoming data into usable structures.
+
+```text
+Raw JSON
+   ↓
+Parser
+   ↓
+Object
+```
+
+---
+
+### Logging
+
+Records things such as:
+
+* Request path
+* HTTP method
+* Status code
+* Duration
+* Request ID
+
+---
+
+### Error Handling
+
+Provides centralized handling for unexpected application errors.
+
+```text
+Controller
+   ↓
+Error
+   ↓
+Global Error Middleware
+   ↓
+Consistent Response
+```
+
+---
+
+# 30. Middleware Order Matters
+
+This is extremely important.
+
+Consider:
+
+```text
+Request
+ ↓
+Authentication
+ ↓
+Authorization
+ ↓
+Controller
+```
+
+This makes sense.
+
+But:
+
+```text
+Request
+ ↓
+Controller
+ ↓
+Authentication
+```
+
+is obviously too late.
+
+The controller may already have performed sensitive operations.
+
+---
+
+# 31. A More Realistic Middleware Order
+
+A production request might look like:
+
+```text
+Request
+   ↓
+Load Balancer
+   ↓
+CDN
+   ↓
+API Server
+   ↓
+Logging
+   ↓
+CORS
+   ↓
+Rate Limiting
+   ↓
+Authentication
+   ↓
+Authorization
+   ↓
+Validation
+   ↓
+Controller
+   ↓
+Service
+   ↓
+Repository
+   ↓
+Database
+```
+
+The exact order depends on the application, but the key idea is:
+
+> **Middleware order is part of application behavior.**
+
+---
+
+# 32. Request Context
+
+Now suppose authentication middleware verifies the JWT.
+
+It extracts:
+
+```text
+userId = 123
+```
+
+How does the controller know who the user is?
+
+We don't want every layer to re-parse the JWT.
+
+Instead, authentication middleware can add the information to a **request-scoped context**.
+
+```text
+Request Context
+
+{
+    userId: 123,
+    role: "user",
+    requestId: "abc123"
+}
+```
+
+Then:
+
+```text
+Auth Middleware
+      ↓
+Adds userId
+      ↓
+Request Context
+      ↓
+Controller
+      ↓
+Service
+```
+
+---
+
+# 33. Request Context Is Request-Scoped
+
+The context belongs to **one request**.
+
+```text
+Request A
+   ↓
+Context A
+```
+
+and:
+
+```text
+Request B
+   ↓
+Context B
+```
+
+They should not accidentally share state.
+
+```text
+Request A ≠ Request B
+```
+
+This makes request context useful for temporary metadata.
+
+---
+
+# 34. What Can Request Context Contain?
+
+Common examples:
+
+```text
+Request Context
+│
+├── userId
+├── role
+├── requestId
+├── traceId
+├── permissions
+├── correlation information
+└── request-specific metadata
+```
+
+For example:
+
+```text
+Auth Middleware
+   ↓
+userId = 123
+
+Logging Middleware
+   ↓
+requestId = abc
+
+Tracing Middleware
+   ↓
+traceId = xyz
+```
+
+All downstream layers can access the relevant context.
+
+---
+
+# 35. Why Request Context Is Useful
+
+Without request context:
+
+```text
+Controller
+   ↓
+"How do I know the user?"
+   ↓
+Read token again
+   ↓
+Parse token again
+```
+
+With request context:
+
+```text
+Auth Middleware
+   ↓
+Verify once
+   ↓
+userId → Context
+   ↓
+Controller
+   ↓
+Service
+```
+
+This reduces duplication and keeps responsibilities separated.
+
+---
+
+# 36. Request Context and Loose Coupling
+
+The controller doesn't need to know **how** the user was authenticated.
+
+It only needs:
+
+```text
+context.userId
+```
+
+Maybe authentication came from:
+
+```text
+JWT
+```
+
+or:
+
+```text
+Session
+```
+
+or:
+
+```text
+API Key
+```
+
+The downstream code doesn't need to care.
+
+```text
+Authentication Mechanism
+          ↓
+      Middleware
+          ↓
+    Request Context
+          ↓
+      Controller
+```
+
+This is a powerful architectural pattern.
+
+---
+
+# 37. Complete Authentication Flow
+
+Consider:
+
+```text
+POST /login
+```
+
+```text
+Client
+   ↓
+Credentials
+   ↓
+Authentication Server
+   ↓
+Verify Password
+   ↓
+Create Session / JWT
+   ↓
+Client
+```
+
+Then:
+
+```text
+GET /profile
+Authorization: Bearer <JWT>
+```
+
+Flow:
+
+```text
+Request
+   ↓
+Logging Middleware
+   ↓
+CORS Middleware
+   ↓
+Rate Limit Middleware
+   ↓
+Authentication Middleware
+   ↓
+Verify JWT
+   ↓
+Extract userId
+   ↓
+Request Context
+   ↓
+Authorization Middleware
+   ↓
+Controller
+   ↓
+Service
+   ↓
+Repository
+   ↓
+Database
+   ↓
+Response
+```
+
+---
+
+# 38. Production Architecture Mental Model
+
+This is the biggest picture to remember from the chapter.
+
+```text
+                    CLIENT
+                      │
+                      ▼
+                Load Balancer
+                      │
+                      ▼
+                     CDN
+                      │
+                      ▼
+                 API Server
+                      │
+       ┌──────────────┼──────────────┐
+       ▼              ▼              ▼
+    Logging          CORS       Rate Limiting
+       │              │              │
+       └──────────────┼──────────────┘
+                      ▼
+                Authentication
+                      │
+                      ▼
+                 Authorization
+                      │
+                      ▼
+                 Validation
+                      │
+                      ▼
+                  Controller
+                      │
+                      ▼
+                   Service
+                      │
+                      ▼
+                 Repository
+                      │
+                      ▼
+                  Database
+```
+
+And request-specific information flows through:
+
+```text
+Authentication
+      ↓
+Request Context
+      ↓
+Controller
+      ↓
+Service
+```
+
+---
+
+# 39. Authentication Decision Guide
+
+When choosing authentication, ask:
+
+### Browser application?
+
+Sessions/cookies can be a very natural choice.
+
+```text
+Browser
+   ↓
+Secure Cookie
+   ↓
+Session
+```
+
+### Distributed API?
+
+JWT can be useful when stateless verification and horizontal scalability are important.
+
+```text
+Client
+   ↓
+JWT
+   ↓
+Any API Server
+```
+
+### Machine-to-machine?
+
+API keys or OAuth Client Credentials may be appropriate.
+
+```text
+Service A
+   ↓
+Credentials
+   ↓
+Service B
+```
+
+### Third-party access to user resources?
+
+OAuth 2.0 is designed for delegated authorization.
+
+```text
+User
+ ↓
+Service
+ ↓
+Grant
+ ↓
+Third-party App
+```
+
+### Need identity on top of OAuth?
+
+Use OIDC.
+
+---
+
+# 🧠 Interview Mental Model
+
+When someone asks:
+
+### "How does authentication work?"
+
+Think:
+
+```text
+Credentials
+   ↓
+Verification
+   ↓
+Credential / Session / Token
+   ↓
+Client
+   ↓
+Subsequent Request
+   ↓
+Verification
+   ↓
+Identity
+```
+
+---
+
+### "JWT vs Session?"
+
+Think:
+
+```text
+Session
+→ Server remembers state
+
+JWT
+→ Token carries claims
+
+Session
+→ Easier revocation
+
+JWT
+→ Easier horizontal scaling
+```
+
+---
+
+### "What is OAuth?"
+
+Think:
+
+```text
+OAuth
+→ Delegated authorization
+
+OIDC
+→ Authentication / identity on OAuth
+```
+
+---
+
+### "What is middleware?"
+
+Think:
+
+```text
+Request
+ ↓
+Middleware
+ ↓
+Middleware
+ ↓
+Controller
+```
+
+Middleware can:
+
+```text
+Continue
+   OR
+Short-circuit
+```
+
+---
+
+### "What is request context?"
+
+Think:
+
+```text
+Middleware
+   ↓
+Extract useful request metadata
+   ↓
+Request Context
+   ↓
+Downstream layers
+```
+
+---
+
+# 🎯 Interview Questions
+
+## Authentication
+
+1. Authentication vs authorization?
+2. What is stateful authentication?
+3. How do sessions work?
+4. Where is session state stored?
+5. Why can sessions become difficult to scale?
+6. How can Redis help with sessions?
+7. What is JWT?
+8. What are the three parts of a JWT?
+9. Is JWT encrypted?
+10. What is a JWT signature?
+11. Why are JWTs useful for distributed systems?
+12. What is the biggest drawback of JWT?
+13. How can JWT revocation be implemented?
+14. What is a JWT blacklist?
+15. Session vs JWT?
+
+## API Keys
+
+16. What is an API key?
+17. Why are API keys commonly used for machine-to-machine communication?
+18. API key vs JWT?
+19. Why aren't API keys usually ideal for user sessions?
+
+## OAuth / OIDC
+
+20. What problem does OAuth solve?
+21. Authentication vs authorization in OAuth?
+22. What is OAuth 2.0?
+23. What is OpenID Connect?
+24. OAuth vs OIDC?
+25. What is an ID token?
+26. What is an access token?
+27. What is Authorization Code flow?
+28. What is Client Credentials flow?
+29. What is Device Authorization flow?
+
+## Cookies
+
+30. Cookie vs token?
+31. Can a JWT be stored in a cookie?
+32. What does HttpOnly do?
+33. What does Secure do?
+34. What does SameSite do?
+35. Why are cookie security attributes important?
+
+## Middleware
+
+36. What is middleware?
+37. What does `next()` do?
+38. What happens if middleware doesn't call `next()`?
+39. What is short-circuiting?
+40. Why does middleware order matter?
+41. What are common middleware responsibilities?
+42. Where should authentication middleware run?
+43. How would you implement global error handling?
+
+## Request Context
+
+44. What is request context?
+45. Why is request context useful?
+46. What information belongs in request context?
+47. Why shouldn't every controller parse the JWT itself?
+48. How does request context reduce coupling?
+49. What does request-scoped state mean?
+
+---
+
+# ⚠️ Important Interview Corrections
+
+There is one HTTP-semantic point worth keeping precise in your notes.
+
+It is tempting to memorize:
+
+```text
+GET     → idempotent
+PUT     → idempotent
+PATCH   → idempotent
+DELETE  → idempotent
+POST    → non-idempotent
+```
+
+But **HTTP does not define PATCH as inherently idempotent or non-idempotent**. PATCH can be designed to be idempotent or non-idempotent depending on the operation.
+
+Likewise, idempotency is about the **intended effect on server state**, not necessarily identical response bodies/status codes.
+
+So for interviews, say:
+
+> **GET, PUT, and DELETE are defined as idempotent by HTTP semantics. PATCH may or may not be idempotent depending on how the operation is designed. POST is not defined as idempotent.**
+
+That's a better answer than simply memorizing a table.
+
+---
+
+# ⭐ Quick Revision
+
+```text
+AUTHENTICATION
+│
+├── Sessions
+│   ├── Stateful
+│   ├── Server stores state
+│   └── Easy revocation
+│
+├── JWT
+│   ├── Stateless verification
+│   ├── Header
+│   ├── Payload
+│   ├── Signature
+│   └── Harder revocation
+│
+├── API Keys
+│   └── Machine-to-machine
+│
+└── OAuth 2.0 + OIDC
+    ├── OAuth → Authorization
+    └── OIDC → Identity
+
+MIDDLEWARE
+│
+├── Logging
+├── CORS
+├── Rate Limiting
+├── Authentication
+├── Authorization
+├── Parsing
+├── Compression
+└── Error Handling
+
+REQUEST CONTEXT
+│
+├── userId
+├── role
+├── requestId
+├── traceId
+└── request metadata
+```
+
+# 🔥 Core Takeaways
+
+* **Authentication = identity; authorization = permissions.**
+* Sessions store authentication state on the server.
+* JWTs allow authentication information to travel with the request.
+* A JWT is **signed, not normally encrypted**.
+* Sessions provide easier immediate revocation.
+* JWTs make horizontal scaling easier because servers can independently verify tokens.
+* JWT revocation requires additional mechanisms such as short expiration, refresh-token strategies, or server-side revocation state.
+* API keys are commonly used for machine-to-machine authentication.
+* OAuth 2.0 primarily handles **delegated authorization**.
+* OIDC adds an **identity/authentication layer** on top of OAuth.
+* A cookie is a storage/transport mechanism; a token is a credential format. They are not mutually exclusive.
+* Middleware forms a **request-processing pipeline**.
+* Middleware can either call `next()` or terminate the request early.
+* Middleware order matters for both correctness and security.
+* Request context provides **request-scoped shared metadata** to downstream layers.
+* A well-designed authentication system separates **credential verification** from the business logic that uses the resulting identity.
+
+> **The goal isn't to memorize "use JWT" or "use sessions." The real backend-engineering skill is understanding the trade-off between state, scalability, revocation, security, and operational complexity — and then choosing the mechanism that fits the system.**
