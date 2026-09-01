@@ -106,13 +106,11 @@ The objective is to understand **why these concepts exist, how they work, how th
 
 ## 🎓 Source & Acknowledgement
 
-A major source for these notes is the **Backend from First Principles** YouTube series by **K Srinivas Rao (Sriniously)**.
-
-The series focuses on understanding backend engineering from a **first-principles and framework-agnostic perspective**, going beyond simply learning a particular language or framework.
+A major source for these notes is the **Backend from First Principles** YouTube series by [**K Srinivas Rao (Sriniously)**](https://www.youtube.com/@Sriniously).
 
 ### Original Creator
 
-**K Srinivas Rao — Sriniously**
+[**K Srinivas Rao — Sriniously**](https://www.youtube.com/@Sriniously)
 
 These notes are my **own study notes and restatements of concepts learned from the videos**. They are intended for personal learning, revision, and interview preparation.
 
