@@ -8,69 +8,68 @@ These notes are written for my own learning, revision, and backend/software engi
 
 ---
 
-## 📚 Chapters
+📚 Chapters
 
-### 🌱 Foundations
+🌱 Foundations
 
-| # | Chapter |
-|---|---|
-| 01 | [Roadmap for Backend from First Principles](./01.%20Roadmap%20for%20Backend%20from%20First%20Principles.md) |
-| 02 | [Walk the Path of a True Backend Engineer](./02.%20Walk%20the%20Path%20of%20a%20True%20Backend%20Engineer.md) |
-| 03 | [What is a Backend, How Do They Work and Why Do We Need Them?](./03.%20What%20is%20a%20Backend%2C%20How%20Do%20They%20Work%20and%20Why%20Do%20We%20Need%20Them%3F.md) |
-| 04 | [Benefits of Learning Backend Engineering from First Principles](./04.%20Benefits%20of%20Learning%20Backend%20Engineering%20from%20First%20Principles.md) |
-
----
-
-### 🌐 Core Backend Concepts
-
-| # | Chapter |
-|---|---|
-| 05 | [HTTP Protocol](./05.%20HTTP%20Protocol.md) |
-| 06 | [Routing & RESTful API Design](./06.%20Routing%20%26%20RESTful%20API%20Design.md) |
-| 07 | [Serialization & Deserialization](./07.%20Serialization%20%26%20Deserialization.md) |
-| 08 | [Authentication, Authorization, Middleware & Request Context](./08.%20Authentication%2C%20Authorization%2C%20Middleware%20%26%20Request%20Context.md) |
-| 09 | [Validation & Transformation](./09.%20Validation%20%26%20Transformation.md) |
-| 10 | [Handlers, Controllers, Services & Repositories](./10.%20Handlers%2C%20Controllers%2C%20Services%20%26%20Repositories.md) |
+#| Chapter
+01| "Roadmap for Backend from First Principles" (./1.%20Roadmap%20for%20backend%20from%20first%20principles.md)
+02| "Walk the Path of a True Backend Engineer" (./2.%20Walk%20the%20path%20of%20a%20true%20backend%20engineer.md)
+03| "What is a Backend, How Do They Work and Why Do We Need Them?" (./3.%20What%20is%20a%20Backend%2C%20how%20do%20they%20work%20and%20why%20do%20we%20need%20them%3F.md)
+04| "Benefits of Learning Backend Engineering from First Principles" (./4.%20Benefits%20of%20Learning%20Backend%20Engineering%20from%20First%20Principles.md)
 
 ---
 
-### 🗄️ APIs & Data
+🌐 Core Backend Concepts
 
-| # | Chapter |
-|---|---|
-| 11 | [Complete REST API Design](./11.%20Complete%20REST%20API%20Design.md) |
-| 12 | [Mastering Databases with PostgreSQL](./12.%20Mastering%20Databases%20with%20PostgreSQL.md) |
-| 13 | [Caching — The Secret Behind It All](./13.%20Caching%20%E2%80%94%20The%20Secret%20Behind%20It%20All.md) |
-| 14 | [Task Queues & Background Jobs](./14.%20Task%20Queues%20%26%20Background%20Jobs.md) |
-| 15 | [Full-Text Search Using Elasticsearch — For Blazingly Fast Search](./15.%20Full-Text%20Search%20Using%20Elasticsearch%20%E2%80%94%20For%20Blazingly%20Fast%20Search.md) |
-| 28 | [OpenAPI — The Universal Contract Between Clients and Servers](./28.%20OpenAPI%20%E2%80%94%20The%20Universal%20Contract%20Between%20Clients%20and%20Servers.md) |
-
----
-
-### 🛡️ Reliability & Production
-
-| # | Chapter |
-|---|---|
-| 16 | [Error Handling & Building Fault-Tolerant Systems](./16.%20Error%20Handling%20%26%20Building%20Fault-Tolerant%20Systems.md) |
-| 17 | [Production-Grade Configuration Management](./17.%20Production-Grade%20Configuration%20Management.md) |
-| 18 | [Logging, Monitoring & Observability](./18.%20Logging%2C%20Monitoring%20%26%20Observability.md) |
-| 19 | [Graceful Shutdown](./19.%20Graceful%20Shutdown.md) |
-| 20 | [Backend Security — Everything You Need to Know](./20.%20Backend%20Security%20%E2%80%94%20Everything%20You%20Need%20to%20Know.md) |
-| 27 | [The Twelve-Factor App](./27.%20The%20Twelve-Factor%20App.md) |
+#| Chapter
+05| "HTTP Protocol" (./5.%20HTTP%20Protocol.md)
+06| "Routing & RESTful API Design" (./6.%20Routing%20%26%20RESTful%20API%20Design%20.md)
+07| "Serialization & Deserialization" (./7.%20Serialization%20%26%20Deserialization.md)
+08| "Authentication, Authorization, Middleware & Request Context" (./8.%20Authentication%2C%20Authorization%2C%20Middleware%20%26%20Request%20Context.md)
+09| "Validation & Transformation" (./9.%20Validation%20%26%20Transformation.md)
+10| "Handlers, Controllers, Services & Repositories" (./10.%20Handlers%2C%20Controllers%2C%20Services%20%26%20Repositories.md)
 
 ---
 
-### ⚡ Performance & Advanced Backend Systems
+🗄️ APIs & Data
 
-| # | Chapter |
-|---|---|
-| 21 | [Backend Scaling & Performance Engineering — Part 1 & Part 2](./21.%20Backend%20Scaling%20%26%20Performance%20Engineering%20%E2%80%94%20Part%201%20%26%20Part%202.md) |
-| 22 | [Concurrency & Parallelism — IO Bound vs CPU Bound](./22.%20Concurrency%20%26%20Parallelism%20%E2%80%94%20IO%20Bound%20vs%20CPU%20Bound.md) |
-| 23–24 | [Object Storage — Part 1 & Part 2](./23.%20Object%20Storage%20%E2%80%94%20Part%201.md) |
-| 25 | [Real-Time Backends](./25.%20Real-Time%20Backends.md) |
-| 26 | [Testing for Backend Engineers — Mocks, TDD & Coverage](./26.%20Testing%20for%20Backend%20Engineers%20%E2%80%94%20Mocks%2C%20TDD%20%26%20Coverage.md) |
-| 29 | [Webhooks — How the Server Calls You](./29.%20Webhooks%20%E2%80%94%20How%20the%20Server%20Calls%20You.md) |
-| 30 | [WebSockets — Real-Time Bidirectional Communication](./30.%20WebSockets%20%E2%80%94%20Real-Time%20Bidirectional%20Communication.md) |
+#| Chapter
+11| "Complete REST API Design" (./11.%20Complete%20REST%20API%20Design.md)
+12| "Mastering Databases with PostgreSQL" (./12.%20Mastering%20Databases%20with%20PostgreSQL.md)
+13| "Caching — The Secret Behind It All" (./13.%20Caching%20%E2%80%94%20The%20Secret%20Behind%20It%20All.md)
+14| "Task Queues & Background Jobs" (./14.%20Task%20Queues%20%26%20Background%20Jobs.md)
+15| "Full-Text Search Using Elasticsearch — For Blazingly Fast Search" (./15.%20Full-Text%20Search%20Using%20Elasticsearch%20%E2%80%94%20For%20Blazingly%20Fast%20Search.md)
+28| "OpenAPI — The Universal Contract Between Clients and Servers" (./28.%20OpenAPI%20%E2%80%94%20The%20Universal%20Contract%20Between%20Clients%20and%20Servers.md)
+
+---
+
+🛡️ Reliability & Production
+
+#| Chapter
+16| "Error Handling & Building Fault-Tolerant Systems" (./16.%20Error%20Handling%20%26%20Building%20Fault-Tolerant%20Systems.md)
+17| "Production-Grade Configuration Management" (./17.%20Production-Grade%20Configuration%20Management.md)
+18| "Logging, Monitoring & Observability" (./18.%20Logging%2C%20Monitoring%20%26%20Observability.md)
+19| "Graceful Shutdown" (./19.%20Graceful%20Shutdown.md)
+20| "Backend Security — Everything You Need to Know" (./20.%20Backend%20Security%3A%20Everything%20You%20Need%20to%20Know.md)
+27| "The Twelve-Factor App" (./27.%20The%20Twelve-Factor%20App%20.md)
+
+---
+
+⚡ Performance & Advanced Backend Systems
+
+#| Chapter
+21| "Backend Scaling & Performance Engineering" (./21.%20Backend%20Scaling%20%26%20Performance%20Engineering.md)
+22| "Concurrency & Parallelism" (./22.%20Concurrency%20%26%20Parallelism.md)
+23–24| "Object Storage — Part 1 & Part 2" (./23%E2%80%9324.%20Object%20Storage.md)
+25| "Real-Time Backends" (./25.%20Real-Time%20Backends.md)
+26| "Testing for Backend Engineers — Mocks, TDD & Coverage" (./26.%20Testing%20for%20Backend%20Engineers%20%E2%80%94%20Mocks%2C%20TDD%20%26%20Coverage.md)
+29| "Webhooks — How the Server Calls You" (./29.%20Webhooks%20%E2%80%94%20How%20the%20Server%20Calls%20You.md)
+30| "WebSockets — Real-Time Bidirectional Communication" (./30.%20WebSockets%20%E2%80%94%20Real-Time%20Bidirectional%20Communication.md)
+
+---
+
+ |
 
 ---
 
